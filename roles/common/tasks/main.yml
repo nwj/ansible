@@ -1,3 +1,4 @@
 ---
 - import_tasks: ufw.yml
 - import_tasks: sshd.yml
+- import_tasks: automatic-upgrades.yml

@@ -1,8 +1,8 @@
 ---
 - name: Install ufw
-  package:
+  apt:
     name: ufw
-    state: latest
+    state: present
 
 - name: Enable ufw wth default policy to deny
   ufw:
