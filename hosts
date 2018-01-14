@@ -1,5 +1,3 @@
-task1.prd.nyc.nwj.cc
-
 # Environment Groups
 [prod]
 task1.prd.nyc.nwj.cc
@@ -12,4 +10,5 @@ task1.prd.nyc.nwj.cc
 [nyc]
 task1.prd.nyc.nwj.cc
 
+# New hosts should be added to this group until they are bootstrapped
 [bootstrap]
