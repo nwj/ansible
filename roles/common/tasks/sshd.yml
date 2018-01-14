@@ -1,0 +1,32 @@
+---
+- name: Disallow password authentication for ssh
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication no"
+  notify: restart sshd
+
+- name: Disallow challenge response authentication for ssh
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: "^ChallengeResponseAuthentication"
+    line: "ChallengeResponseAuthentication no"
+  notify: restart sshd
+
+- name: Enable public key authentication for ssh
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: "^PubkeyAuthentication"
+    line: "PubkeyAuthentication yes"
+  notify: restart sshd
+
+- name: Disallow root login through ssh
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin no"
+  notify: restart sshd

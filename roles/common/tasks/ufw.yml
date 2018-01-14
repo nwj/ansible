@@ -1,0 +1,16 @@
+---
+- name: Install ufw
+  package:
+    name: ufw
+    state: latest
+
+- name: Enable ufw wth default policy to deny
+  ufw:
+    state: enabled
+    policy: deny
+
+- name: Setup ufw rule to allow ssh
+  ufw:
+    rule: allow
+    port: 22
+    proto: tcp

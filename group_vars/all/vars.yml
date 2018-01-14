@@ -1,0 +1,4 @@
+---
+admin_username: "{{ vault_admin_username }}"
+admin_password: "{{ vault_admin_password }}"
+admin_ssh_public_key_path: "{{ vault_admin_ssh_public_key_path }}"

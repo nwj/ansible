@@ -1,0 +1,13 @@
+task1.prd.nyc.nwj.cc
+
+# Environment Groups
+[prod]
+task1.prd.nyc.nwj.cc
+
+# Service Groups
+[task]
+task1.prd.nyc.nwj.cc
+
+# Location Groups
+[nyc]
+task1.prd.nyc.nwj.cc
