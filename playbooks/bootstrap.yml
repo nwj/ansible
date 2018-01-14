@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: bootstrap
   remote_user: root
   gather_facts: no
   tasks:
