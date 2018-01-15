@@ -4,13 +4,24 @@
     name: ufw
     state: present
 
-- name: Enable ufw wth default policy to deny
+- name: By default, deny all incoming traffic
   ufw:
-    state: enabled
     policy: deny
+    direction: incoming
+
+- name: By default, allow all outgoing traffic
+  ufw:
+    policy: allow
+    direction: outgoing
 
 - name: Setup ufw rule to allow ssh
   ufw:
     rule: allow
     port: 22
     proto: tcp
+
+- name: Enable ufw with logging
+  ufw:
+    logging: on
+    state: enabled
+
