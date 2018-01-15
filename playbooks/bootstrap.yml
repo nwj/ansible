@@ -21,23 +21,23 @@
         key: "{{ lookup('file', admin_ssh_public_key_path) }}"
         state: present
 
-    - name: Create the 'wheel' group
+    - name: Create the 'sudo' group
       group:
-        name: wheel
+        name: sudo
         state: present
 
-    - name: Give the 'wheel' group passwordless sudo access
+    - name: Give the 'sudo' group passwordless sudo access
       lineinfile:
         path: /etc/sudoers
         state: present
-        regexp: "^%wheel"
-        line: "%wheel ALL=(ALL) NOPASSWD: ALL"
+        regexp: "^%sudo"
+        line: "%sudo ALL=(ALL) NOPASSWD: ALL"
         validate: "/usr/sbin/visudo -cf %s"
 
-    - name: Add the admin user to the 'wheel' group
+    - name: Add the admin user to the 'sudo' group
       user:
         name: "{{ admin_username }}"
-        group: wheel
+        group: sudo
         append: yes
 
 - hosts: all
