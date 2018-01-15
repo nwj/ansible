@@ -47,7 +47,7 @@
 - name: Ensure the admin user is in the 'ssh-user' group
   user:
     name: "{{ admin_username }}"
-    group: ssh-user
+    groups: ssh-user
     append: yes
 
 - name: Restrict ssh access to users in the 'ssh-user' group

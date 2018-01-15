@@ -37,7 +37,7 @@
     - name: Add the admin user to the 'sudo' group
       user:
         name: "{{ admin_username }}"
-        group: sudo
+        groups: sudo
         append: yes
 
 - hosts: all
