@@ -1,4 +1,12 @@
 ---
+- name: Ensure use of ssh protocol 2
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: "^Protocol"
+    line: "Protocol 2"
+  notify: restart sshd
+
 - name: Disallow password authentication for ssh
   lineinfile:
     path: /etc/ssh/sshd_config
