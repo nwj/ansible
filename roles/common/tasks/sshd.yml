@@ -15,6 +15,14 @@
     line: "ChallengeResponseAuthentication no"
   notify: restart sshd
 
+- name: Disallow root login through ssh
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin no"
+  notify: restart sshd
+
 - name: Enable public key authentication for ssh
   lineinfile:
     path: /etc/ssh/sshd_config
@@ -23,10 +31,21 @@
     line: "PubkeyAuthentication yes"
   notify: restart sshd
 
-- name: Disallow root login through ssh
+- name: Ensure there is an 'ssh-user' group
+  group:
+    name: ssh-user
+    state: present
+
+- name: Ensure the admin user is in the 'ssh-user' group
+  user:
+    name: "{{ admin_username }}"
+    group: ssh-user
+    append: yes
+
+- name: Restrict ssh access to users in the 'ssh-user' group
   lineinfile:
     path: /etc/ssh/sshd_config
     state: present
-    regexp: "^PermitRootLogin"
-    line: "PermitRootLogin no"
+    regexp: "^AllowGroups"
+    line: "AllowGroups ssh-user"
   notify: restart sshd
