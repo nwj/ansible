@@ -1,0 +1,8 @@
+---
+- hosts: task
+  remote_user: "{{ admin_username }}"
+  become: yes
+  roles:
+    - common
+    - taskserver
+

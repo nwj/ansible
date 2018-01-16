@@ -1,0 +1,16 @@
+---
+taskd_username: taskd
+taskd_group: taskd
+
+taskd_domain: "{{ vault_taskd_domain }}"
+taskd_port: "{{ vault_taskd_port }}"
+
+taskd_data_path: /var/taskd
+taskd_cert_email: "{{ vault_taskd_cert_email }}"
+
+taskd_selfsigned_cn: "{{ vault_taskd_domain }}"
+taskd_selfsigned_organization: "{{ vault_taskd_selfsigned_organization }}"
+taskd_selfsigned_country: "{{ vault_taskd_selfsigned_country }}"
+taskd_selfsigned_state: "{{ vault_taskd_selfsigned_state }}"
+taskd_selfsigned_locality: "{{ vault_taskd_selfsigned_locality }}"
+

@@ -1,0 +1,156 @@
+---
+- name: Create the taskd group
+  group:
+    name: "{{ taskd_group }}"
+    state: present 
+
+- name: Create the taskd user
+  user:
+    name: "{{ taskd_username }}"
+    group: "{{ taskd_group }}"
+    system: yes
+    createhome: no
+    shell: /usr/sbin/nologin
+    state: present
+
+- name: Open the taskd port
+  ufw:
+    rule: allow
+    port: "{{ taskd_port }}"
+    proto: tcp
+
+- name: Install taskd
+  apt:
+    name: taskd
+    state: present
+
+- name: Create data folder for taskd
+  file:
+    path: "{{ taskd_data_path }}"
+    owner: "{{ taskd_username }}"
+    group: "{{ taskd_group }}"
+    mode: 0700
+    state: directory
+
+- name: Set TASKDDATA environment variable
+  lineinfile:
+    dest: "/etc/profile"
+    regexp: "^export TASKDDATA="
+    line: "export TASKDDATA={{ taskd_data_path }}"
+    state: present
+    insertafter: eof
+
+- name: Initialize the data folder
+  command: "taskd init"
+  args:
+    creates: "{{ taskd_data_path }}/config"
+  environment:
+    TASKDDATA: "{{ taskd_data_path }}"
+  become: yes
+  become_user: "{{ taskd_username }}"
+
+- name: Create the config file for taskd
+  template:
+    src: taskd_config.jinja2
+    dest: "{{ taskd_data_path }}/config"
+    owner: "{{ taskd_username }}"
+    group: "{{ taskd_group }}"
+
+- name: Add the certbot repo
+  apt_repository:
+    repo: "ppa:certbot/certbot"
+    state: present
+
+- name: Install certbot
+  apt:
+    name: certbot
+    state: present
+
+- name: Check if a letsencrypt certificate already exists.
+  stat:
+    path: /etc/letsencrypt/live/{{ taskd_domain }}/cert.pem
+  register: taskd_cert
+
+- name: Open port 80 in preparation for certificate generation
+  ufw:
+    rule: allow
+    port: 80
+    proto: tcp
+  when: not taskd_cert.stat.exists
+
+- name: Open port 443 in preparation for certificate generation
+  ufw:
+    rule: allow
+    port: 443
+    proto: tcp
+  when: not taskd_cert.stat.exists
+
+- name: Generate a new certificate through letsencrypt
+  command: "certbot certonly --standalone --noninteractive --agree-tos --email {{ taskd_cert_email }} -d {{ taskd_domain }}"
+  when: not taskd_cert.stat.exists
+
+- name: Close port 80 since certificate generation is done
+  ufw:
+    rule: allow
+    port: 80
+    proto: tcp
+    delete: yes
+  when: not taskd_cert.stat.exists
+
+- name: Close port 443 since certificate generation is done
+  ufw:
+    rule: allow
+    port: 443
+    proto: tcp
+    delete: yes
+  when: not taskd_cert.stat.exists
+
+- name: Schedule certificate auto-renewal
+  cron:
+    name: taskd certificate auto-renewal.
+    job: "ufw rule allow 80/tcp && ufw rule allow 443/tcp && certbot renew --quiet --no-self-upgrade && ufw rule delete allow 80/tcp && ufw rule delete allow 443/tcp"
+    special_time: monthly
+    state: present
+
+- name: Link the letsencrypt fullchain into the taskd folder
+  file:
+    src: "/etc/letsencrypt/live/{{ taskd_domain }}/fullchain.pem"
+    dest: "{{ taskd_data_path }}/fullchain.pem"
+    owner: "{{ taskd_username }}"
+    group: "{{ taskd_group }}"
+    state: link
+
+- name: Link the letsencrypt privkey into the taskd folder
+  file:
+    src: "/etc/letsencrypt/live/{{ taskd_domain }}/privkey.pem"
+    dest: "{{ taskd_data_path }}/privkey.pem"
+    owner: "{{ taskd_username }}"
+    group: "{{ taskd_group }}"
+    state: link
+
+- name: Copy the scripts for generating the self-signed cert into the taskd folder
+  copy:
+    src: "/usr/share/taskd/pki/{{ item }}"
+    dest: "{{ taskd_data_path }}/{{ item }}"
+    owner: "{{ taskd_username }}"
+    group: "{{ taskd_group }}"
+    mode: 0700
+    remote_src: yes
+  with_items:
+    - generate.ca
+    - generate.client
+
+- name: Copy the vars for generating the self-signed cert into the taskd folder
+  template:
+    src: self_signing_vars.jinja2
+    dest: "{{ taskd_data_path }}/vars"
+    owner: "{{ taskd_username }}"
+    group: "{{ taskd_group }}"
+
+- name: Generate the self-signed ca cert and key
+  shell: ./generate.ca
+  args:
+    creates: "{{ taskd_data_path }}/ca.key.pem"
+    chdir: "{{ taskd_data_path }}/"
+  become: yes
+  become_user: "{{ taskd_username }}"
