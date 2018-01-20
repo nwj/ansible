@@ -13,12 +13,6 @@
     shell: /usr/sbin/nologin
     state: present
 
-- name: Open the taskd port
-  ufw:
-    rule: allow
-    port: "{{ taskd_port }}"
-    proto: tcp
-
 - name: Install taskd
   apt:
     name: taskd
@@ -112,26 +106,30 @@
     special_time: monthly
     state: present
 
-- name: Link the letsencrypt fullchain into the taskd folder
+- name: Create a certs folder in the data folder
   file:
-    src: "/etc/letsencrypt/live/{{ taskd_domain }}/fullchain.pem"
-    dest: "{{ taskd_data_path }}/fullchain.pem"
+    path: "{{ taskd_data_path }}/certs"
     owner: "{{ taskd_username }}"
     group: "{{ taskd_group }}"
-    state: link
+    mode: 0700
+    state: directory
 
-- name: Link the letsencrypt privkey into the taskd folder
-  file:
-    src: "/etc/letsencrypt/live/{{ taskd_domain }}/privkey.pem"
-    dest: "{{ taskd_data_path }}/privkey.pem"
+- name: Copy the letsencrypt certs into the data folder
+  copy:
+    src: "/etc/letsencrypt/live/{{ taskd_domain }}/{{ item }}"
+    dest: "{{ taskd_data_path }}/certs/{{ item }}"
     owner: "{{ taskd_username }}"
     group: "{{ taskd_group }}"
-    state: link
+    mode: 0700
+    remote_src: yes
+  with_items:
+    - privkey.pem
+    - fullchain.pem
 
-- name: Copy the scripts for generating the self-signed cert into the taskd folder
+- name: Copy the scripts for generating the ca and client certs into the data folder
   copy:
     src: "/usr/share/taskd/pki/{{ item }}"
-    dest: "{{ taskd_data_path }}/{{ item }}"
+    dest: "{{ taskd_data_path }}/certs/{{ item }}"
     owner: "{{ taskd_username }}"
     group: "{{ taskd_group }}"
     mode: 0700
@@ -140,17 +138,117 @@
     - generate.ca
     - generate.client
 
-- name: Copy the vars for generating the self-signed cert into the taskd folder
+- name: Copy the vars for generating the ca cert into the data folder
   template:
     src: self_signing_vars.jinja2
-    dest: "{{ taskd_data_path }}/vars"
+    dest: "{{ taskd_data_path }}/certs/vars"
     owner: "{{ taskd_username }}"
     group: "{{ taskd_group }}"
 
 - name: Generate the self-signed ca cert and key
   shell: ./generate.ca
   args:
-    creates: "{{ taskd_data_path }}/ca.key.pem"
-    chdir: "{{ taskd_data_path }}/"
+    creates: "{{ taskd_data_path }}/certs/ca.key.pem"
+    chdir: "{{ taskd_data_path }}/certs"
   become: yes
   become_user: "{{ taskd_username }}"
+
+- name: Open the taskd port
+  ufw:
+    rule: allow
+    port: "{{ taskd_port }}"
+    proto: tcp
+
+- name: Create a systemd script for the taskd service
+  template:
+    src: taskd.service.jinja2
+    dest: /lib/systemd/system/taskd.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Enable and start the taskd service
+  systemd:
+    name: taskd
+    enabled: yes
+    state: started
+    daemon_reload: yes
+
+- name: Create the users folder in the data folder
+  file:
+    path: "{{ taskd_data_path }}/users"
+    owner: "{{ taskd_username }}"
+    group: "{{ taskd_group }}"
+    mode: 0700
+    state: directory
+
+- name: Check if users.conf exists
+  stat:
+    path: "{{ taskd_data_path }}/users/users.conf"
+  register: taskd_users_conf_check
+
+- name: Create the users.conf file in the users folder
+  file:
+    path: "{{ taskd_data_path }}/users/users.conf"
+    owner: "{{ taskd_username }}"
+    group: "{{ taskd_group }}"
+    mode: 0700
+    state: touch
+  when: not taskd_users_conf_check.stat.exists
+
+- name: Read contents of users.conf
+  command: "cat {{ taskd_data_path }}/users/users.conf"
+  register: taskd_users_conf
+  changed_when: false
+
+- name: Add the client organization
+  command: "taskd add org '{{ taskwarrior_org }}'"
+  environment:
+    TASKDDATA: "{{ taskd_data_path }}"
+  become: yes
+  become_user: "{{ taskd_username }}"
+  when: taskd_users_conf.stdout.find(taskwarrior_org) == -1
+
+- name: Add the client user
+  command: "taskd add user '{{ taskwarrior_org }}' '{{ taskwarrior_user }}'"
+  environment:
+    TASKDDATA: "{{ taskd_data_path }}"
+  register: taskwarrior_user_key
+  become: yes
+  become_user: "{{ taskd_username }}"
+  when: taskd_users_conf.stdout.find(taskwarrior_user) == -1
+
+- name: Append the client user information to users.conf
+  blockinfile:
+    dest: "{{ taskd_data_path }}/users/users.conf"
+    state: present
+    insertafter: BOF
+    block: |
+      Name: {{ taskwarrior_user}}
+      Organization: {{ taskwarrior_org }}
+      User key: {{ taskwarrior_user_key.stdout[14:] }}
+    marker: "# {mark} {{ taskwarrior_user }}"
+  when: taskd_users_conf.stdout.find(taskwarrior_user) == -1
+
+- name: Generate the client certs
+  shell: "./generate.client {{ taskwarrior_user|replace(' ', '_') }}"
+  args:
+    creates: "{{ taskd_data_path }}/certs/{{ taskwarrior_user|replace(' ', '_') }}.key.pem"
+    chdir: "{{ taskd_data_path }}/certs"
+  become: yes
+  become_user: "{{ taskd_username }}"
+
+  # We don't fetch the ca cert, because our ca is letsencrypt with this setup.
+  # Their cert is at https://letsencrypt.org/certificates/.
+  # In the past the one to use has been the X3 Cross-Signed Intermediate cert.
+- name: Fetch the client information down from the server
+  fetch:
+    src: "{{ taskd_data_path }}/{{ item }}"
+    dest: "tmp/"
+    flat: yes
+  with_items:
+    - "users/users.conf"
+    - "certs/{{ taskwarrior_user|replace(' ', '_') }}.key.pem"
+    - "certs/{{ taskwarrior_user|replace(' ', '_') }}.cert.pem"
+
+
