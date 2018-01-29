@@ -244,7 +244,7 @@
 - name: Fetch the client information down from the server
   fetch:
     src: "{{ taskd_data_path }}/{{ item }}"
-    dest: "tmp/"
+    dest: "~/tmp/"
     flat: yes
   with_items:
     - "users/users.conf"
