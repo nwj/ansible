@@ -1,0 +1,25 @@
+---
+- name: Install nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Create the nginx config
+  template: 
+    src: nginx.jinja2
+    dest: "/etc/nginx/sites-available/huginn"
+  notify: restart nginx
+
+- name: Link the nginx config into site-enabled
+  file:
+    src: "/etc/nginx/sites-available/huginn"
+    dest: "/etc/nginx/sites-enabled/huginn"
+    state: link
+  notify: restart nginx
+
+- name: Remove the default nginx site
+  file:
+    path: "/etc/nginx/sites-enabled/default"
+    state: absent
+  notify: restart nginx
+

@@ -1,0 +1,90 @@
+---
+- name: Create the huginn directory
+  file:
+    path: "{{ huginn_install_path }}"
+    owner: "{{ huginn_username }}"
+    group: "{{ huginn_group }}"
+    mode: 0755
+    state: directory
+
+- name: Clone the huginn git repo
+  git:
+    repo: "https://github.com/huginn/huginn"
+    dest: "{{ huginn_install_path }}"
+    version: master
+    force: yes
+  become: yes
+  become_user: "{{ huginn_username }}"
+
+- name: Create the log and tmp folders
+  file:
+    path: "{{ huginn_install_path }}/{{ item }}"
+    owner: "{{ huginn_username }}"
+    group: "{{ huginn_group }}"
+    mode: 0700
+    state: directory
+  with_items:
+    - "log"
+    - "tmp/pids"
+    - "tmp/sockets"
+
+- name: Create the .env file
+  template: 
+    src: env.jinja2
+    dest: "{{ huginn_install_path }}/.env"
+    owner: "{{ huginn_username }}"
+    group: "{{ huginn_group }}"
+
+- name: Create the unicorn config file
+  template:
+    src: unicorn.rb.jinja2
+    dest: "{{ huginn_install_path }}/config/unicorn.rb"
+    owner: "{{ huginn_username }}"
+    group: "{{ huginn_group }}"
+
+- name: Install gems with bundle
+  bundler:
+    chdir: "{{ huginn_install_path }}"
+    deployment_mode: yes
+    exclude_groups:
+      - development
+      - test
+    state: present
+  become: yes
+  become_user: "{{ huginn_username }}"
+
+- name: Create the database
+  shell: "bundle exec rake db:create RAILS_ENV=production"
+  args:
+    chdir: "{{ huginn_install_path }}"
+  register: db_create_result
+  changed_when: "not db_create_result.stdout|search('already exists')"
+  become: yes
+  become_user: "{{ huginn_username }}"
+
+- name: Migrate the database
+  shell: "bundle exec rake db:migrate RAILS_ENV=production"
+  args:
+    chdir: "{{ huginn_install_path }}"
+  become: yes
+  become_user: "{{ huginn_username }}"
+
+- name: Compile assets
+  shell: "bundle exec rake assets:precompile RAILS_ENV=production"
+  args:
+    chdir: "{{ huginn_install_path }}"
+  become: yes
+  become_user: "{{ huginn_username }}"
+
+- name: Create the procfile
+  template:
+    src: procfile.jinja2
+    dest: "{{ huginn_install_path }}/Procfile"
+    owner: "{{ huginn_username }}"
+    group: "{{ huginn_group }}"
+
+- name: Export the init scripts
+  shell: "bundle exec rake production:export"
+  args:
+    chdir: "{{ huginn_install_path }}"
+  become: yes

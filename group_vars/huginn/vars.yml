@@ -1,0 +1,16 @@
+---
+huginn_username: huginn
+huginn_group: huginn
+
+huginn_pg_role_name: huginn
+huginn_pg_role_password: "RuaBnY4Oik2q9YbCx90Hod9M2k54A6"
+huginn_pg_role_port: 5432
+huginn_pg_db_name: huginn_production
+
+huginn_install_path: /var/huginn
+huginn_number_of_workers: 1
+
+huginn_domain: "huginn.nwj.cc"
+huginn_app_secret_token: "iUUwqBvYbeD7UCoeM60mmks35E0GPRIzx8tUtVWQAs0="
+huginn_invitation_code: "gg0X5cs86C9/7gjI8pS8VNw9NSA4SE8N+RYt/CeAieM="
+

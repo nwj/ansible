@@ -1,0 +1,14 @@
+---
+- name: Create the huginn group
+  group:
+    name: "{{ huginn_group }}"
+    state: present 
+
+- name: Create the huginn user
+  user:
+    name: "{{ huginn_username }}"
+    group: "{{ huginn_group }}"
+    system: yes
+    createhome: yes
+    shell: /usr/sbin/nologin
+    state: present
