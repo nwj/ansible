@@ -14,3 +14,4 @@ huginn_domain: "{{ vault_huginn_domain }}"
 huginn_app_secret_token: "{{ vault_huginn_app_secret_token }}"
 huginn_invitation_code: "{{ vault_huginn_invitation_code }}"
 
+huginn_cert_email: "{{ vault_huginn_cert_email }}"

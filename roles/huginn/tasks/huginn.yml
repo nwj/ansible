@@ -21,7 +21,7 @@
     path: "{{ huginn_install_path }}/{{ item }}"
     owner: "{{ huginn_username }}"
     group: "{{ huginn_group }}"
-    mode: 0700
+    mode: 0755
     state: directory
   with_items:
     - "log"
