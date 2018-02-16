@@ -15,3 +15,7 @@ huginn_app_secret_token: "{{ vault_huginn_app_secret_token }}"
 huginn_invitation_code: "{{ vault_huginn_invitation_code }}"
 
 huginn_cert_email: "{{ vault_huginn_cert_email }}"
+
+huginn_seed_username: "{{ vault_huginn_seed_username }}"
+huginn_seed_password: "{{ vault_huginn_seed_password }}"
+huginn_seed_email: "{{ vault_huginn_seed_email }}"

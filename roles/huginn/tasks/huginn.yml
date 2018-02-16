@@ -69,6 +69,13 @@
   become: yes
   become_user: "{{ huginn_username }}"
 
+- name: Seed the admin user
+  shell: "bundle exec rake db:seed RAILS_ENV=production SEED_USERNAME={{huginn_seed_username }} SEED_PASSWORD={{ huginn_seed_password }} SEED_EMAIL={{ huginn_seed_email }}"
+  args:
+    chdir: "{{ huginn_install_path }}"
+  become: yes
+  become_user: "{{ huginn_username }}"
+
 - name: Compile assets
   shell: "bundle exec rake assets:precompile RAILS_ENV=production"
   args:
