@@ -1,0 +1,26 @@
+---
+- name: Install postfix
+  apt:
+    name: postfix
+    state: present
+
+- name: Configure /etc/postfix/main.cf
+  template:
+    src: main.cf.jinja2
+    dest: /etc/postfix/main.cf
+  notify: restart postfix
+
+- name: Configure /etc/mailname
+  copy:
+    content: "{{ huginn_domain }}"
+    dest: '/etc/mailname'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  notify: restart postfix
+
+- name: Ensure postfix is started and enabled at boot.
+  service:
+    name: postfix
+    state: started
+    enabled: yes

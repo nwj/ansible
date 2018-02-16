@@ -3,3 +3,8 @@
   service:
     name: nginx
     state: restarted
+
+- name: restart postfix
+  service:
+    name: postfix
+    state: restarted
