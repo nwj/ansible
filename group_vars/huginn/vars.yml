@@ -2,7 +2,7 @@
 huginn_username: "{{ vault_huginn_username }}"
 huginn_group: "{{ vault_huginn_group }}"
 
-huginn_pg_role_name: "{{ vault_huginn_pg_role_name }}"
+huginn_pg_role_name: "{{ vault_huginn_username }}"
 huginn_pg_role_password: "{{ vault_huginn_pg_role_password }}"
 huginn_pg_role_port: "{{ vault_huginn_pg_role_port }}"
 huginn_pg_db_name: "{{ vault_huginn_pg_db_name }}"

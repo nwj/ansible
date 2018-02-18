@@ -8,3 +8,9 @@
   service:
     name: postfix
     state: restarted
+
+- name: export huginn service
+  shell: "bundle exec rake production:export"
+  args:
+    chdir: "{{ huginn_install_path }}"
+  become: yes

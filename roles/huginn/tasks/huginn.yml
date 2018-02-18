@@ -7,14 +7,20 @@
     mode: 0755
     state: directory
 
+- name: Check if the huginn env file is already present
+  stat:
+    path: "{{ huginn_install_path }}/.env"
+  register: huginn_env_file
+
 - name: Clone the huginn git repo
   git:
     repo: "https://github.com/huginn/huginn"
     dest: "{{ huginn_install_path }}"
     version: master
-    force: yes
+    force: no
   become: yes
   become_user: "{{ huginn_username }}"
+  when: not huginn_env_file.stat.exists
 
 - name: Create the log and tmp folders
   file:
@@ -34,6 +40,7 @@
     dest: "{{ huginn_install_path }}/.env"
     owner: "{{ huginn_username }}"
     group: "{{ huginn_group }}"
+  notify: export huginn service
 
 - name: Create the unicorn config file
   template:
@@ -41,6 +48,7 @@
     dest: "{{ huginn_install_path }}/config/unicorn.rb"
     owner: "{{ huginn_username }}"
     group: "{{ huginn_group }}"
+  notify: export huginn service
 
 - name: Install gems with bundle
   bundler:
@@ -58,7 +66,7 @@
   args:
     chdir: "{{ huginn_install_path }}"
   register: db_create_result
-  changed_when: "not db_create_result.stdout|search('already exists')"
+  changed_when: '"already exists" not in db_create_result.stderr'
   become: yes
   become_user: "{{ huginn_username }}"
 
@@ -66,6 +74,8 @@
   shell: "bundle exec rake db:migrate RAILS_ENV=production"
   args:
     chdir: "{{ huginn_install_path }}"
+  register: db_migrate_result
+  changed_when: db_migrate_result.stdout
   become: yes
   become_user: "{{ huginn_username }}"
 
@@ -73,8 +83,15 @@
   shell: "bundle exec rake db:seed RAILS_ENV=production SEED_USERNAME={{huginn_seed_username }} SEED_PASSWORD={{ huginn_seed_password }} SEED_EMAIL={{ huginn_seed_email }}"
   args:
     chdir: "{{ huginn_install_path }}"
+  register: db_seed_result
+  changed_when: '"already exists" not in db_create_result.stderr'
   become: yes
   become_user: "{{ huginn_username }}"
+
+- name: Check if the assets directory is present
+  stat:
+    path: "{{ huginn_install_path }}/public/assets"
+  register: huginn_assets_dir
 
 - name: Compile assets
   shell: "bundle exec rake assets:precompile RAILS_ENV=production"
@@ -82,6 +99,7 @@
     chdir: "{{ huginn_install_path }}"
   become: yes
   become_user: "{{ huginn_username }}"
+  when: not huginn_assets_dir.stat.exists
 
 - name: Create the procfile
   template:
@@ -89,9 +107,5 @@
     dest: "{{ huginn_install_path }}/Procfile"
     owner: "{{ huginn_username }}"
     group: "{{ huginn_group }}"
+  notify: export huginn service
 
-- name: Export the init scripts
-  shell: "bundle exec rake production:export"
-  args:
-    chdir: "{{ huginn_install_path }}"
-  become: yes
