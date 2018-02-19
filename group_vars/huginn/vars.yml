@@ -19,3 +19,6 @@ huginn_cert_email: "{{ vault_huginn_cert_email }}"
 huginn_seed_username: "{{ vault_huginn_seed_username }}"
 huginn_seed_password: "{{ vault_huginn_seed_password }}"
 huginn_seed_email: "{{ vault_huginn_seed_email }}"
+
+huginn_twitter_api_key: "{{ vault_huginn_twitter_api_key }}"
+huginn_twitter_api_secret: "{{ vault_huginn_twitter_api_secret }}"
