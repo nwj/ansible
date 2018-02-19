@@ -20,6 +20,8 @@
     - libcurl4-openssl-dev
     # Needed for init files
     - runit
+    # Needed for huginn's graph visualizations
+    - graphviz
 
 - name: Install bundler, foreman, and rake gems
   gem:
