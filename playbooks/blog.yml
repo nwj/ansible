@@ -1,0 +1,11 @@
+---
+- hosts: bootstrap
+  gather_facts: no
+  roles:
+    - bootstrap
+
+- hosts: blog
+  remote_user: "{{ admin_username }}"
+  become: yes
+  roles:
+    - common

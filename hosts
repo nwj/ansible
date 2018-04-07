@@ -2,6 +2,7 @@
 [prod]
 task1.prd.nyc.nwj.cc
 huginn1.prd.nyc.nwj.cc
+blog1.prd.nyc.nwj.cc
 
 # Service Groups
 [task]
@@ -10,10 +11,14 @@ task1.prd.nyc.nwj.cc
 [huginn]
 huginn1.prd.nyc.nwj.cc
 
+[blog]
+blog1.prd.nyc.nwj.cc
+
 # Location Groups
 [nyc]
 task1.prd.nyc.nwj.cc
 huginn1.prd.nyc.nwj.cc
+blog1.prd.nyc.nwj.cc
 
 # New hosts should be added to this group until they are bootstrapped
 [bootstrap]
