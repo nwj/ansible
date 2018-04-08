@@ -1,5 +1,6 @@
 ---
-blog_username: blog
-blog_group: blog
-
-blog_path: /var/nwj.cc
+blog_username: "{{ vault_blog_username }}"
+blog_group: "{{ vault_blog_group }}"
+blog_path: "{{ vault_blog_path }}"
+blog_domain: "{{ vault_blog_domain }}"
+blog_cert_email: "{{ vault_blog_cert_email }}"

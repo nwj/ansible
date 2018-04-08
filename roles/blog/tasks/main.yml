@@ -63,7 +63,7 @@
     - nodejs
     - npm
 
-# Apparently required to get ubuntu's crusty version of node working with all of this.
+# Apparently required to get ubuntu 16.04's crusty version of node working with all of this.
 - name: Link nodejs to node
   file:
     src: "/usr/bin/nodejs"
@@ -123,3 +123,54 @@
     rule: allow
     port: 443
     proto: tcp
+
+- name: Check if a letsencrypt certificate already exists.
+  stat:
+    path: /etc/letsencrypt/live/{{ blog_domain }}/cert.pem
+  register: blog_cert
+
+- name: Get a default nginx config in place for letsencrypt
+  template:
+    src: nginx_default.jinja2
+    dest: "/etc/nginx/sites-enabled/default"
+  when: not blog_cert.stat.exists
+
+- name: Restart nginx
+  service:
+    name: nginx
+    state: restarted
+  when: not blog_cert.stat.exists
+
+- name: Generate a new certificate through letsencrypt
+  command: "certbot certonly --nginx --noninteractive --agree-tos --email {{ blog_cert_email}} -d {{ blog_domain }}"
+  when: not blog_cert.stat.exists
+
+- name: Generate a new certificate through letsencrypt for the www version of the domain.
+  command: "certbot certonly --nginx --noninteractive --agree-tos --email {{ blog_cert_email}} -d www.{{ blog_domain }}"
+  when: not blog_cert.stat.exists
+
+- name: Schedule certificate auto-renewal
+  cron:
+    name: blog certificate auto-renewal.
+    job: "certbot renew --quiet --no-self-upgrade"
+    special_time: daily
+    state: present
+
+- name: Remove the default nginx config
+  file:
+    path: "/etc/nginx/sites-enabled/default"
+    state: absent
+  notify: restart nginx
+
+- name: Create the nginx config
+  template: 
+    src: nginx.jinja2
+    dest: "/etc/nginx/sites-available/blog"
+  notify: restart nginx
+
+- name: Link the nginx config into sites-enabled
+  file:
+    src: "/etc/nginx/sites-available/blog"
+    dest: "/etc/nginx/sites-enabled/blog"
+    state: link
+  notify: restart nginx
