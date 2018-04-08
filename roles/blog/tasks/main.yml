@@ -91,12 +91,16 @@
     owner: "{{ blog_username }}"
     group: "{{ blog_group }}"
     mode: 0755
+  become: yes
+  become_user: "{{ blog_username }}"
 
 - name: Build the site
   make:
     chdir: "{{ blog_path }}"
     params:
       MD5_COMMAND: ./md5.sh
+  become: yes
+  become_user: "{{ blog_username }}"
 
 - name: Add the certbot repo
   apt_repository:
