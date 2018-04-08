@@ -1,0 +1,76 @@
+---
+- name: Create the blog group
+  group:
+    name: "{{ blog_group }}"
+    state: present
+
+- name: Create the blog user
+  user:
+    name: "{{ blog_username }}"
+    group: "{{ blog_group }}"
+    system: yes
+    createhome: yes
+    shell: /usr/sbin/nologin
+    state: present
+
+- name: Create the working directory
+  file:
+    path: "{{ blog_path }}"
+    owner: "{{ blog_username }}"
+    group: "{{ blog_group }}"
+    mode: 0755
+    state: directory
+
+- name: Clone the nwj.cc git repo into the working directory
+  git:
+    repo: "https://github.com/nwj/nwj.cc"
+    dest: "{{ blog_path }}"
+    version: master
+    force: no
+  become: yes
+  become_user: "{{ blog_username }}"
+
+# Ubuntu 16.04's version of hugo is over two years old, so we don't
+# want to install through apt-get.
+- name: Check if hugo is installed
+  command: dpkg-query -l hugo
+  failed_when: false
+  changed_when: false
+  register: package_check
+
+- name: Download the hugo executable
+  get_url:
+    url: https://github.com/gohugoio/hugo/releases/download/v0.38.1/hugo_0.38.1_Linux-64bit.deb
+    dest: "{{ blog_path }}"
+  when: package_check.stderr.find('no packages found') != -1
+
+- name: Install hugo
+  apt:
+    deb: "{{ blog_path }}/hugo_0.38.1_Linux-64bit.deb"
+  when: package_check.stderr.find('no packages found') != -1
+
+- name: Remove the downloaded hugo executable
+  file:
+    path: "{{ blog_path }}/hugo_0.38.1_Linux-64bit.deb"
+    state: absent
+  when: package_check.stderr.find('no packages found') != -1
+
+- name: Install nodejs and npm
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - nodejs
+    - npm
+
+- name: Install postcss, cssnext, postcss-normalize, cssnano, and html-minifier
+  npm:
+    name: "{{ item }}"
+    global: yes
+    state: present
+  with_items:
+    - postcss-cli
+    - cssnext
+    - postcss-normalize
+    - cssnano
+    - html-minifier
