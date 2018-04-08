@@ -63,6 +63,13 @@
     - nodejs
     - npm
 
+# Apparently required to get ubuntu's crusty version of node working with all of this.
+- name: Link nodejs to node
+  file:
+    src: "/usr/bin/nodejs"
+    dest: "/usr/bin/node"
+    state: link
+
 - name: Install postcss, cssnext, postcss-normalize, cssnano, and html-minifier
   npm:
     name: "{{ item }}"
@@ -71,6 +78,48 @@
   with_items:
     - postcss-cli
     - cssnext
+    - postcss-cssnext
     - postcss-normalize
     - cssnano
     - html-minifier
+
+# This is necessary with the MD5_COMMAND param on make because ubuntu has md5sum, rather than md5 on macos
+- name: Create the md5 script
+  copy:
+    src: md5.sh
+    dest: "{{ blog_path }}"
+    owner: "{{ blog_username }}"
+    group: "{{ blog_group }}"
+    mode: 0755
+
+- name: Build the site
+  make:
+    chdir: "{{ blog_path }}"
+    params:
+      MD5_COMMAND: ./md5.sh
+
+- name: Add the certbot repo
+  apt_repository:
+    repo: "ppa:certbot/certbot"
+    state: present
+
+- name: Install nginx, certbot, and the nginx plugin
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - nginx
+    - certbot
+    - python-certbot-nginx
+
+- name: Open port 80
+  ufw:
+    rule: allow
+    port: 80
+    proto: tcp
+
+- name: Open port 443
+  ufw:
+    rule: allow
+    port: 443
+    proto: tcp
