@@ -3,6 +3,7 @@
 task1.prd.nyc.nwj.cc
 huginn1.prd.nyc.nwj.cc
 blog1.prd.nyc.nwj.cc
+app1.prd.nyc.orbital.build
 
 # Service Groups
 [task]
@@ -14,11 +15,15 @@ huginn1.prd.nyc.nwj.cc
 [blog]
 blog1.prd.nyc.nwj.cc
 
+[orbital]
+app1.prd.nyc.orbital.build
+
 # Location Groups
 [nyc]
 task1.prd.nyc.nwj.cc
 huginn1.prd.nyc.nwj.cc
 blog1.prd.nyc.nwj.cc
+app1.prd.nyc.orbital.build
 
 # New hosts should be added to this group until they are bootstrapped
 [bootstrap]
