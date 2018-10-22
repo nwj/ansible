@@ -55,55 +55,61 @@
     repo: "ppa:certbot/certbot"
     state: present
 
-- name: Install certbot
+- name: Install nginx, certbot, and the nginx plugin
   apt:
-    name: certbot
+    name: "{{ item }}"
     state: present
+  with_items:
+    - nginx
+    - certbot
+    - python-certbot-nginx
+
+- name: Open port 80
+  ufw:
+    rule: allow
+    port: 80
+    proto: tcp
+
+- name: Open port 443
+  ufw:
+    rule: allow
+    port: 443
+    proto: tcp
 
 - name: Check if a letsencrypt certificate already exists.
   stat:
     path: /etc/letsencrypt/live/{{ taskd_domain }}/cert.pem
   register: taskd_cert
 
-- name: Open port 80 in preparation for certificate generation
-  ufw:
-    rule: allow
-    port: 80
-    proto: tcp
+- name: Get a default nginx config in place for letsencrypt
+  template:
+    src: nginx_default.jinja2
+    dest: "/etc/nginx/sites-enabled/default"
   when: not taskd_cert.stat.exists
 
-- name: Open port 443 in preparation for certificate generation
-  ufw:
-    rule: allow
-    port: 443
-    proto: tcp
+- name: Restart nginx
+  service:
+    name: nginx
+    state: restarted
   when: not taskd_cert.stat.exists
 
 - name: Generate a new certificate through letsencrypt
-  command: "certbot certonly --standalone --noninteractive --agree-tos --email {{ taskd_cert_email }} -d {{ taskd_domain }}"
+  command: "certbot certonly --nginx --noninteractive --agree-tos --email {{ taskd_cert_email }} -d {{ taskd_domain }}"
   when: not taskd_cert.stat.exists
 
-- name: Close port 80 since certificate generation is done
-  ufw:
-    rule: allow
-    port: 80
-    proto: tcp
-    delete: yes
-  when: not taskd_cert.stat.exists
-
-- name: Close port 443 since certificate generation is done
-  ufw:
-    rule: allow
-    port: 443
-    proto: tcp
-    delete: yes
-  when: not taskd_cert.stat.exists
+- name: Get the renewal hook script in place
+  template:
+    src: renew-hook.sh.jinja2
+    dest: "{{ taskd_data_path }}/renew-hook.sh"
+    owner: root
+    group: root
+    mode: 0700
 
 - name: Schedule certificate auto-renewal
   cron:
     name: taskd certificate auto-renewal.
-    job: "ufw rule allow 80/tcp && ufw rule allow 443/tcp && certbot renew --quiet --no-self-upgrade && ufw rule delete allow 80/tcp && ufw rule delete allow 443/tcp"
-    special_time: monthly
+    job: "certbot renew --quiet --no-self-upgrade --deploy-hook {{ taskd_data_path }}/renew-hook.sh"
+    special_time: daily
     state: present
 
 - name: Create a certs folder in the data folder
