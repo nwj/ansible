@@ -2,6 +2,6 @@
 
 cp /etc/letsencrypt/live/{{ taskd_domain }}/privkey.pem {{ taskd_data_path }}/certs/
 cp /etc/letsencrypt/live/{{ taskd_domain }}/fullchain.pem {{ taskd_data_path }}/certs/
-chown {{ taskd_username }}: {{ taskd_group }} {{ taskd_data_path }}/certs/privkey.pem
-chown {{ taskd_username }}: {{ taskd_group }} {{ taskd_data_path }}/certs/fullchain.pem
+chown {{ taskd_username }}:{{ taskd_group }} {{ taskd_data_path }}/certs/privkey.pem
+chown {{ taskd_username }}:{{ taskd_group }} {{ taskd_data_path }}/certs/fullchain.pem
 systemctl restart taskd.service
