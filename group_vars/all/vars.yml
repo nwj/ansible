@@ -1,4 +1,7 @@
 ---
+# Ubuntu 18.04 does not come with python2, so we need to switch ansible's preferred python interpreter
+ansible_python_interpreter: "/usr/bin/python3"
+
 admin_username: "{{ vault_admin_username }}"
 admin_password: "{{ vault_admin_password }}"
 admin_ssh_public_key_path: "{{ vault_admin_ssh_public_key_path }}"

@@ -3,7 +3,7 @@
 server {
   listen [::]:80;
   listen 80;
-  server_name {{ blog_domain }} www.{{ blog_domain }}; 
+  server_name {{ blog_domain }} www.{{ blog_domain }};
   return 301 https://{{ blog_domain }}$request_uri;
 
   server_tokens off;
@@ -12,7 +12,7 @@ server {
 }
 
 server {
-  listen [::]443 ssl http2;
+  listen [::]:443 ssl http2;
   listen 443 ssl http2;
   server_name www.{{ blog_domain }};
   return 301 https://{{ blog_domain }}$request_uri;
@@ -35,7 +35,7 @@ server {
   listen [::]:443 ssl http2 deferred;
   listen 443 ssl http2 deferred;
   server_name {{ blog_domain }};
-  root {{ blog_path }}/build;
+  root {{ blog_path }}/public;
   error_page 404 /404.html;
   charset utf-8;
 

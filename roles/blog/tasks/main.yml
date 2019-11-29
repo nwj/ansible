@@ -30,8 +30,8 @@
   become: yes
   become_user: "{{ blog_username }}"
 
-# Ubuntu 16.04's version of hugo is over two years old, so we don't
-# want to install through apt-get.
+  # Ubuntu 18.04's doesn't maintain an up to date version of hugo and there isn't a good outside repo to add
+  # either. So, we install manually...sign.
 - name: Check if hugo is installed
   command: dpkg-query -l hugo
   failed_when: false
@@ -40,81 +40,87 @@
 
 - name: Download the hugo executable
   get_url:
-    url: https://github.com/gohugoio/hugo/releases/download/v0.38.1/hugo_0.38.1_Linux-64bit.deb
+    url: https://github.com/gohugoio/hugo/releases/download/v0.60.1/hugo_0.60.1_Linux-64bit.deb
     dest: "{{ blog_path }}"
   when: package_check.stderr.find('no packages found') != -1
 
 - name: Install hugo
   apt:
-    deb: "{{ blog_path }}/hugo_0.38.1_Linux-64bit.deb"
+    deb: "{{ blog_path }}/hugo_0.60.1_Linux-64bit.deb"
   when: package_check.stderr.find('no packages found') != -1
 
 - name: Remove the downloaded hugo executable
   file:
-    path: "{{ blog_path }}/hugo_0.38.1_Linux-64bit.deb"
+    path: "{{ blog_path }}/hugo_0.60.1_Linux-64bit.deb"
     state: absent
   when: package_check.stderr.find('no packages found') != -1
 
-- name: Install nodejs and npm
-  apt:
-    name: "{{ item }}"
+- name: Add Nodesource apt key
+  apt_key:
+    url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
     state: present
-  with_items:
-    - nodejs
-    - npm
 
-# Apparently required to get ubuntu 16.04's crusty version of node working with all of this.
-- name: Link nodejs to node
-  file:
-    src: "/usr/bin/nodejs"
-    dest: "/usr/bin/node"
-    state: link
-
-- name: Install postcss, cssnext, postcss-normalize, cssnano, and html-minifier
-  npm:
-    name: "{{ item }}"
-    global: yes
-    state: present
-  with_items:
-    - postcss-cli
-    - cssnext
-    - postcss-cssnext
-    - postcss-normalize
-    - cssnano
-    - html-minifier
-
-# This is necessary with the MD5_COMMAND param on make because ubuntu has md5sum, rather than md5 on macos
-- name: Create the md5 script
-  copy:
-    src: md5.sh
-    dest: "{{ blog_path }}"
-    owner: "{{ blog_username }}"
-    group: "{{ blog_group }}"
-    mode: 0755
-  become: yes
-  become_user: "{{ blog_username }}"
-
-- name: Build the site
-  make:
-    chdir: "{{ blog_path }}"
-    params:
-      MD5_COMMAND: ./md5.sh
-  become: yes
-  become_user: "{{ blog_username }}"
-
-- name: Add the certbot repo
+- name: Add NodeSource repositories for Node.js
   apt_repository:
-    repo: "ppa:certbot/certbot"
+    repo: "{{ item }}"
     state: present
+  with_items:
+    - "deb https://deb.nodesource.com/node_{{ nodejs_version }} {{ ansible_distribution_release }} main"
+    - "deb-src https://deb.nodesource.com/node_{{ nodejs_version }} {{ ansible_distribution_release }} main"
+  register: node_repo
+
+- name: Update apt cache if repo was added
+  apt:
+    update_cache: yes
+  when: node_repo.changed
+
+- name: Ensure Node.js and npm are installed
+  apt: 
+    name: "nodejs={{ nodejs_version|regex_replace('x', '') }}*"
+    state: present
+
+- name: Add Yarn apt key
+  apt_key:
+    url: "https://dl.yarnpkg.com/debian/pubkey.gpg"
+    state: present
+
+- name: Add Yarn repositories
+  apt_repository:
+    repo: "deb https://dl.yarnpkg.com/debian/ stable main"
+    state: present
+  register: yarn_repo
+
+- name: Update apt cache if repo was added
+  apt:
+    update_cache: yes
+  when: yarn_repo.changed
+
+- name: Install yarn
+  apt: 
+    name: yarn
+    state: present
+
+- name: Install build dependencies with yarn install
+  yarn:
+    path: "{{ blog_path }}"
+  become: yes
+  become_user: "{{ blog_username }}"
+
+- name: Build the site with hugo
+  command: "hugo --minify"
+  become: yes
+  become_user: "{{ blog_username }}"
+  args:
+    chdir: "{{ blog_path }}"
+    creates: "{{ blog_path }}/public"
 
 - name: Install nginx, certbot, and the nginx plugin
   apt:
-    name: "{{ item }}"
+    name: 
+      - nginx
+      - certbot
+      - python-certbot-nginx
     state: present
-  with_items:
-    - nginx
-    - certbot
-    - python-certbot-nginx
 
 - name: Open port 80
   ufw:

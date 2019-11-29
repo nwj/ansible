@@ -14,7 +14,7 @@
     policy: allow
     direction: outgoing
 
-- name: Setup ufw rule to allow ssh
+- name: Allow incoming ssh traffic
   ufw:
     rule: allow
     port: 22
