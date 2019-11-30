@@ -1,10 +1,11 @@
 ---
-- name: Install nginx, certbot, and the nginx plugin
+- name: Install nginx, certbot, the nginx plugin, and goaccess
   apt:
     name:
       - nginx
       - certbot
       - python-certbot-nginx
+      - goaccess
     state: present
 
 - name: Open port 80
