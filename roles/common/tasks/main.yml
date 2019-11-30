@@ -1,5 +1,70 @@
 ---
-- import_tasks: ufw.yml
-- import_tasks: sshd.yml
-- import_tasks: fail2ban.yml
-- import_tasks: automatic-upgrades.yml
+- name: Update apt-get
+  apt:
+    update_cache: yes
+
+- name: Firewall configuration
+  block:
+    - name: Install ufw
+      apt:
+        name: ufw
+        state: present
+
+    - name: By default, deny all incoming traffic
+      ufw:
+        policy: deny
+        direction: incoming
+
+    - name: By default, allow all outgoing traffic
+      ufw:
+        policy: allow
+        direction: outgoing
+
+    - name: Allow incoming ssh traffic
+      ufw:
+        rule: allow
+        port: 22
+        proto: tcp
+
+    - name: Enable ufw with logging
+      ufw:
+        logging: on
+        state: enabled
+
+- name: SSH hardening
+  block:
+    - name: Copy over a hardened sshd config
+      template:
+        src: sshd_config.jinja2
+        dest: "/etc/ssh/sshd_config"
+        backup: yes
+        validate: "sshd -t -f %s"
+      notify: restart sshd
+
+    - name: Install fail2ban
+      apt:
+        name: fail2ban
+        state: present
+
+    - name: Ensure fail2ban is running
+      service:
+        name: fail2ban
+        state: started
+        enabled: yes
+
+- name: Automatic updates
+  block:
+    - name: Install unattended-upgrades
+      apt:
+        name: unattended-upgrades
+        state: present
+
+    - name: Configure unattended upgrades file
+      copy:
+        src: 50unattended-upgrades
+        dest: /etc/apt/apt.conf.d/50unattended-upgrades
+
+    - name: Configure auto upgrades file
+      copy:
+        src: 20auto-upgrades
+        dest: /etc/apt/apt.conf.d/20auto-upgrades

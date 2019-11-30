@@ -7,4 +7,3 @@ app1.prd.nyc.orbital.build
 
 # New hosts should be added to this group until they are bootstrapped
 [bootstrap]
-nwj.cc
