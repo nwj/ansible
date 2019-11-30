@@ -1,7 +1,11 @@
 ---
-blog_username: "{{ vault_blog_username }}"
-blog_group: "{{ vault_blog_group }}"
-blog_path: "{{ vault_blog_path }}"
-blog_domain: "{{ vault_blog_domain }}"
-blog_cert_email: "{{ vault_blog_cert_email }}"
+username: "{{ vault_username }}"
+group: "{{ vault_group }}"
+working_path: "{{ vault_working_path }}"
+build_path: "{{ vault_build_path}}"
+domain: "{{ vault_domain }}"
+cert_email: "{{ vault_cert_email }}"
+
 nodejs_version: "12.x"
+
+hugo_version: "0.60.1"

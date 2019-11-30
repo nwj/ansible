@@ -1,0 +1,30 @@
+---
+- name: Check if hugo is installed
+  command: dpkg-query -s hugo
+  failed_when: false
+  changed_when: false
+  register: package_check
+
+- name: Remove any previously installed hugo if it is the wrong version
+  apt:
+    name: hugo
+    state: absent
+  when: package_check.stdout.find(hugo_version) == -1
+
+- name: Hugo installation
+  block:
+    - name: Download the hugo executable
+      get_url:
+        url: https://github.com/gohugoio/hugo/releases/download/v{{ hugo_version }}/hugo_{{ hugo_version }}_Linux-64bit.deb
+        dest: "/tmp"
+
+    - name: Install hugo
+      apt:
+        deb: "/tmp/hugo_{{ hugo_version }}_Linux-64bit.deb"
+
+    - name: Remove the downloaded hugo executable
+      file:
+        path: "/tmp/hugo_{{ hugo_version }}_Linux-64bit.deb"
+        state: absent
+
+  when: package_check.stderr.find('not installed') != -1 or package_check.stdout.find(hugo_version) == -1

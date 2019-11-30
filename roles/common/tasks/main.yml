@@ -23,7 +23,7 @@
     - name: Allow incoming ssh traffic
       ufw:
         rule: allow
-        port: 22
+        port: '22'
         proto: tcp
 
     - name: Enable ufw with logging
@@ -37,7 +37,6 @@
       template:
         src: sshd_config.jinja2
         dest: "/etc/ssh/sshd_config"
-        backup: yes
         validate: "sshd -t -f %s"
       notify: restart sshd
 

@@ -1,0 +1,71 @@
+---
+- name: Install nginx, certbot, and the nginx plugin
+  apt:
+    name:
+      - nginx
+      - certbot
+      - python-certbot-nginx
+    state: present
+
+- name: Open port 80
+  ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+
+- name: Open port 443
+  ufw:
+    rule: allow
+    port: '443'
+    proto: tcp
+
+- name: Check if a letsencrypt certificate already exists.
+  stat:
+    path: /etc/letsencrypt/live/{{ domain }}/cert.pem
+  register: blog_cert
+
+- name: Cert generation
+  block:
+    - name: Get a default nginx config in place for letsencrypt
+      template:
+        src: nginx_default.jinja2
+        dest: "/etc/nginx/sites-enabled/default"
+
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: restarted
+
+    - name: Generate a new certificate through letsencrypt
+      command: "certbot certonly --nginx --noninteractive --agree-tos --email {{ cert_email}} -d {{ domain }}"
+
+    - name: Generate a new certificate through letsencrypt for the www version of the domain.
+      command: "certbot certonly --nginx --noninteractive --agree-tos --email {{ cert_email}} -d www.{{ domain }}"
+
+  when: not blog_cert.stat.exists
+
+- name: Schedule certificate auto-renewal
+  cron:
+    name: blog certificate auto-renewal.
+    job: "certbot renew --quiet --no-self-upgrade"
+    special_time: daily
+    state: present
+
+- name: Clean up any default nginx config
+  file:
+    path: "/etc/nginx/sites-enabled/default"
+    state: absent
+  notify: restart nginx
+
+- name: Create the nginx config
+  template: 
+    src: nginx.jinja2
+    dest: "/etc/nginx/sites-available/{{ domain }}"
+  notify: restart nginx
+
+- name: Link the nginx config into sites-enabled
+  file:
+    src: "/etc/nginx/sites-available/{{ domain }}"
+    dest: "/etc/nginx/sites-enabled/{{ domain }}"
+    state: link
+  notify: restart nginx

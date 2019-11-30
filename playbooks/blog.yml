@@ -9,4 +9,48 @@
   become: yes
   roles:
     - common
-    - blog
+    - node
+    - hugo
+    - nginx
+  tasks:
+    - name: Create the site group
+      group:
+        name: "{{ group }}"
+        state: present
+
+    - name: Create the site user
+      user:
+        name: "{{ username }}"
+        group: "{{ group }}"
+        system: yes
+        createhome: yes
+        shell: /usr/sbin/nologin
+        state: present
+
+    - name: Create the working directory
+      file:
+        path: "{{ working_path }}"
+        owner: "{{ username }}"
+        group: "{{ group }}"
+        mode: 0755
+        state: directory
+
+    - name: Site build process
+      block:
+        - name: Clone the nwj.cc git repo into the working directory
+          git:
+            repo: "https://github.com/nwj/nwj.cc"
+            dest: "{{ working_path }}"
+            force: yes
+
+        - name: Install build dependencies with yarn install
+          yarn:
+            path: "{{ working_path }}"
+
+        - name: Build the site with hugo
+          command: "hugo --minify"
+          args:
+            chdir: "{{ working_path }}"
+
+      become: yes
+      become_user: "{{ username }}"
