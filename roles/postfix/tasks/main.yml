@@ -1,0 +1,48 @@
+---
+- name: Skip the postfix configuration wizard
+  debconf:
+    name: postfix
+    question: postfix/main_mailer_type
+    value: No configuration
+    vtype: select
+
+- name: Install postfix
+  apt:
+    name: postfix
+    state: present
+
+- name: Setup the mailname
+  template:
+    src: mailname.jinja2
+    dest: /etc/mailname
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart postfix
+
+- name: Setup the postfix configuration file
+  template:
+    src: main.cf.jinja2
+    dest: /etc/postfix/main.cf
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart postfix
+
+- name: Setup the postfix virtual aliases
+  template:
+    src: virtual.jinja2
+    dest: /etc/postfix/virtual
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - map virtual aliases
+    - restart postfix
+
+- name: Open port 25
+  ufw:
+    rule: allow
+    port: '25'
+    proto: tcp
+

@@ -12,6 +12,7 @@
     - node
     - hugo
     - nginx
+    - postfix
   tasks:
     - name: Create the site group
       group:

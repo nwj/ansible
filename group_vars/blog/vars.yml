@@ -6,6 +6,12 @@ build_path: "{{ vault_build_path}}"
 domain: "{{ vault_domain }}"
 cert_email: "{{ vault_cert_email }}"
 
+# For the Node Role
 nodejs_version: "12.x"
 
+# For the Hugo Role
 hugo_version: "0.60.1"
+
+# For the Postfix Role
+mailname: "{{ vault_domain }}"
+forwarding_address: "{{ vault_cert_email }}"
