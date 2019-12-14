@@ -1,11 +1,12 @@
 ---
-- name: Install nginx, certbot, the nginx plugin, and goaccess
+- name: Install nginx, certbot, the nginx plugin, logrotate, and goaccess
   apt:
     name:
       - nginx
       - certbot
       - python-certbot-nginx
       - goaccess
+      - logrotate
     state: present
 
 - name: Open port 80
@@ -59,7 +60,7 @@
   notify: restart nginx
 
 - name: Create the nginx config
-  template: 
+  template:
     src: nginx.jinja2
     dest: "/etc/nginx/sites-available/{{ domain }}"
   notify: restart nginx
@@ -70,3 +71,18 @@
     dest: "/etc/nginx/sites-enabled/{{ domain }}"
     state: link
   notify: restart nginx
+
+- name: Setup logrotation
+  template:
+    src: logrotate.jinja2
+    dest: "/etc/logrotate.d/nginx"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Schedule regular generation of traffic reports
+  cron:
+    name: goaccess report generation.
+    job: "zcat -f /var/log/nginx/access.log* | grep $(date -d 'yesterday' +'%b/%Y') | goaccess --log-format=COMBINED -o /home/{{ admin_username }}/Traffic$(date -d 'yesterday' +'%b%Y').html"
+    special_time: daily
+    state: present
