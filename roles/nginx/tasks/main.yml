@@ -83,6 +83,6 @@
 - name: Schedule regular generation of traffic reports
   cron:
     name: goaccess report generation.
-    job: "zcat -f /var/log/nginx/access.log* | grep $(date -d 'yesterday' +'\%b/\%Y') | goaccess --log-format=COMBINED -o /home/{{ admin_username }}/Traffic$(date -d 'yesterday' +'\%b\%Y').html"
+    job: "zcat -f /var/log/nginx/access.log* | grep $(date -d 'yesterday' +'\\%b/\\%Y') | goaccess --log-format=COMBINED -o /home/{{ admin_username }}/Traffic$(date -d 'yesterday' +'\\%b\\%Y').html"
     special_time: daily
     state: present
