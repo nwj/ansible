@@ -4,7 +4,7 @@
     name:
       - nginx
       - certbot
-      - python-certbot-nginx
+      - python3-certbot-nginx
       - goaccess
       - logrotate
     state: present
