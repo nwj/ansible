@@ -1,6 +1,0 @@
----
-orbital_username: "{{ vault_orbital_username }}"
-orbital_group: "{{ vault_orbital_group }}"
-orbital_path: "{{ vault_orbital_path }}"
-orbital_domain: "{{ vault_orbital_domain }}"
-orbital_cert_email: "{{ vault_orbital_cert_email }}"
